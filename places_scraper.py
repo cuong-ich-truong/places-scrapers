@@ -4,7 +4,7 @@ import json
 import os
 import time
 from datetime import datetime
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Any
 
 from bs4 import BeautifulSoup
 from selenium import webdriver
@@ -71,26 +71,22 @@ def extract_place_info(element: BeautifulSoup) -> Dict[str, str]:
 
 def get_places(
     browser: webdriver.Chrome,
-    location: str,
-    radius: int,
-    category_name: str,
-    limit: int
+    config: Dict[str, Any],
+    category_name: str
 ) -> List[Dict[str, str]]:
     """Get places from Google Maps search results.
     
     Args:
         browser: Selenium WebDriver instance
-        location: Location to search in
-        radius: Search radius in kilometers
+        config: Configuration dictionary containing search parameters
         category_name: Type of places to search for
-        limit: Maximum number of places to collect
     
     Returns:
         List of dictionaries containing place information
     """
     places_list = []
-    search_query = f'{category_name} in {location}'
-    url = f'https://www.google.com/maps/search/{search_query}/@{radius}z'
+    search_query = f'{category_name} in {config["search_term"]}'
+    url = f'https://www.google.com/maps/search/{search_query}/@{config["radius_km"]}z'
     print(f"\nSearch URL: {url}")
 
     browser.get(url)
@@ -103,7 +99,7 @@ def get_places(
 
     # Find the results panel
     results_panel = browser.find_element(By.CSS_SELECTOR, "div[role='feed']")
-    while scroll_attempts < max_scroll_attempts and len(places_list) < limit:
+    while scroll_attempts < max_scroll_attempts and len(places_list) < config["max_places"]:
         # Scroll within the results panel
         browser.execute_script(
             "arguments[0].scrollTop = arguments[0].scrollHeight",
@@ -118,7 +114,7 @@ def get_places(
         
         # Update places list
         for element in data_elements[len(places_list):]:  # Only process new elements
-            if len(places_list) >= limit:
+            if len(places_list) >= config["max_places"]:
                 break
             try:
                 place_info = extract_place_info(element)
@@ -127,7 +123,7 @@ def get_places(
                 print(f"Error processing place element: {error}")
                 continue
         
-        if len(places_list) >= limit:
+        if len(places_list) >= config["max_places"]:
             break
         
         scroll_attempts += 1
@@ -305,11 +301,6 @@ def main():
     with open(config_path, 'r', encoding='utf-8') as config_file:
         config = json.load(config_file)
     
-    search_location = config['search_term']
-    search_radius = config['radius_km']
-    search_categories = config['categories']
-    max_places_per_category = config['max_places']
-
     browser = webdriver.Chrome(options=CHROME_OPTIONS)
 
     # Create output directory if it doesn't exist
@@ -329,14 +320,12 @@ def main():
         with open(output_file_path, 'w', encoding='utf-8') as output_file:
             output_file.write('[\n')
 
-            for category in search_categories:
+            for category in config['categories']:
                 print(f"\nSearching for {category}...")
                 places = get_places(
                     browser,
-                    search_location,
-                    search_radius,
-                    category,
-                    max_places_per_category
+                    config,
+                    category
                 )
                 
                 is_first_result = process_places(
