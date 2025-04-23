@@ -51,8 +51,8 @@ class GooglePlacesAPI:
             vertices = []
             for point in query['polygon']:
                 vertices.append({
-                    'latitude': point['lat'],
-                    'longitude': point['lng']
+                    'latitude': point[1],  # Extract latitude by index
+                    'longitude': point[0]  # Extract longitude by index
                 })
             
             payload['locationBias'] = {
