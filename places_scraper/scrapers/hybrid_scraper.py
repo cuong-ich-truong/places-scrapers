@@ -165,8 +165,7 @@ class HybridScraper:
                         )
                         reviews.append(review)
                         processed_reviews.add(review_key)
-                    except Exception as e:
-                        debug("get_reviews", e)
+                    except (NoSuchElementException, StaleElementReferenceException) as e:
                         continue
 
                 # Scroll down
