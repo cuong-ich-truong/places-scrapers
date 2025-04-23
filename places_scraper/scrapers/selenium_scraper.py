@@ -35,8 +35,6 @@ def run_selenium_scraper(
                     reviews = scraper.get_reviews(place)
                     place.reviews = reviews
 
-                    debug("run_selenium_scraper", place.reviews)
-
                     # Write to file
                     if not is_first_result:
                         output_file.write(",\n")

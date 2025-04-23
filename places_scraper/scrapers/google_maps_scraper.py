@@ -109,8 +109,7 @@ class GoogleMapsScraper:
         # Extract just the number from the rating (e.g., "5 stars" -> "5")
         rating = rating.split()[0] if rating else ""
 
-        review = Review(author=author, time=date, text=text, rating=rating)
-        debug("extract_review_info", review)
+        review = Review(author=author, time=date, text=text, rating=rating)        
         return review
 
     def get_places(self, config: Dict[str, Any], category_name: str) -> List[Place]:
@@ -176,11 +175,12 @@ class GoogleMapsScraper:
         print(f"Found {len(places_list)} places for {category_name}")
         return places_list
 
-    def get_reviews(self, place_info: Place) -> List[Review]:
+    def get_reviews(self, place_info: Place, max_reviews: int = 100) -> List[Review]:
         """Get reviews for a specific place.
 
         Args:
-            place_info: Dictionary containing place information
+            place_info: Place object containing place information
+            max_reviews: Maximum number of reviews to collect
 
         Returns:
             List of Review objects
@@ -188,46 +188,118 @@ class GoogleMapsScraper:
         reviews = []
 
         self.driver.get(place_info.url)
-
-        page_content = self.driver.page_source
-        soup = BeautifulSoup(page_content, "html.parser")
+        time.sleep(1)  # Wait for page to load
 
         # Click on the "Reviews" tab
-        reviews_tab_button = self.driver.find_element(
-            By.CSS_SELECTOR, "button[aria-label*='Reviews for']"
-        )
-        reviews_tab_button.click()
+        try:
+            reviews_button = self.wait.until(
+                EC.element_to_be_clickable(
+                    (By.CSS_SELECTOR, "button[aria-label*='Reviews for']")
+                )
+            )
+            reviews_button.click()
+        except (TimeoutException, ElementClickInterceptedException) as error:
+            debug("get_reviews", error)
+            return reviews
 
-        retry = 0
-        while True:
-            # retry till reviews element found
-            page_content = self.driver.page_source
-            soup = BeautifulSoup(page_content, "html.parser")
-            review_divs = soup.find_all("div", class_="jftiEf")
-            if len(review_divs) > 0:
-                break
-            time.sleep(0.5)
+        # Get address and phone number
+        try:
+            address_element = self.wait.until(
+                EC.presence_of_element_located(
+                    (By.CSS_SELECTOR, "button[data-item-id='address']")
+                )
+            )
+            place_info.address = address_element.get_attribute("aria-label") or ""
+        except (TimeoutException, NoSuchElementException) as error:
+            debug("get_reviews", error)
+            place_info.address = ""
 
-            retry += 1
-            if retry > 20:
-                break
+        try:
+            phone_number_element = self.wait.until(
+                EC.presence_of_element_located(
+                    (By.CSS_SELECTOR, "button[data-tooltip='Copy phone number']")
+                )
+            )
+            place_info.phone = phone_number_element.get_attribute("aria-label") or ""
+        except (TimeoutException, NoSuchElementException) as error:
+            debug("get_reviews", error)
+            place_info.phone = ""
 
-        for review_div in review_divs:
+        # Scroll and collect reviews until we have enough or can't scroll anymore
+        last_height = self.driver.execute_script("return document.body.scrollHeight")
+        scroll_attempts = 0
+        max_scroll_attempts = 20
+        processed_reviews = set()  # Track processed reviews to avoid duplicates
+
+        while len(reviews) < max_reviews and scroll_attempts < max_scroll_attempts:
             try:
-                author = review_div.find("div", class_="d4r55").text.strip()
-                date = review_div.find("span", class_="rsqaWe").text.strip()
-                text = review_div.find("span", class_="wiI7pd").text.strip()
+                # Wait for reviews to load
+                self.wait.until(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, "div.jftiEf"))
+                )
 
-                # Get the rating
-                rating_element = review_div.find("span", class_="kvMYJc")
-                rating = rating_element.get("aria-label") if rating_element else ""
-                # Extract just the number from the rating (e.g., "5 stars" -> "5")
-                rating = rating.split()[0] if rating else "0"
+                # Get current reviews
+                review_divs = self.driver.find_elements(By.CSS_SELECTOR, "div.jftiEf")
 
-                # Create Review object
-                review = Review(author=author, text=text, rating=int(rating), time=date)
-                reviews.append(review)
+                for review_div in review_divs:
+                    if len(reviews) >= max_reviews:
+                        break
+
+                    try:
+                        # Get review content
+                        author = review_div.find_element(
+                            By.CSS_SELECTOR, "div.d4r55"
+                        ).text.strip()
+                        date = review_div.find_element(
+                            By.CSS_SELECTOR, "span.rsqaWe"
+                        ).text.strip()
+                        text = review_div.find_element(
+                            By.CSS_SELECTOR, "span.wiI7pd"
+                        ).text.strip()
+
+                        # Create a unique key for this review
+                        review_key = f"{author}_{date}_{text[:50]}"
+                        if review_key in processed_reviews:
+                            continue
+
+                        # Get the rating
+                        rating_element = review_div.find_element(
+                            By.CSS_SELECTOR, "span.kvMYJc"
+                        )
+                        rating = (
+                            rating_element.get_attribute("aria-label")
+                            if rating_element
+                            else ""
+                        )
+                        rating = rating.split()[0] if rating else "0"
+
+                        # Create Review object
+                        review = Review(
+                            author=author, text=text, rating=int(rating), time=date
+                        )
+                        reviews.append(review)
+                        processed_reviews.add(review_key)
+                    except Exception as e:
+                        debug("get_reviews", e)
+                        continue
+
+                # Scroll down
+                self.driver.execute_script(
+                    "window.scrollTo(0, document.body.scrollHeight);"
+                )
+                time.sleep(1)  # Wait for new content to load
+
+                # Check if we've reached the end
+                new_height = self.driver.execute_script(
+                    "return document.body.scrollHeight"
+                )
+                if new_height == last_height:
+                    break
+                last_height = new_height
+                scroll_attempts += 1
+
             except Exception as e:
                 debug("get_reviews", e)
-                continue
+                break
+
         return reviews
