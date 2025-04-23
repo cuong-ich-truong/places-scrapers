@@ -3,12 +3,11 @@
 import os
 import time
 from datetime import datetime
-import json
-from typing import Dict, Any
 
 from .utils.config import load_config, validate_config
 from .scrapers.selenium_scraper import run_selenium_scraper
 from .scrapers.places_api_scraper import run_places_api_scraper
+from .scrapers.hybrid_scraper import run_hybrid_scraper
 
 
 def main():
@@ -29,11 +28,22 @@ def main():
     output_file.write("[\n")
 
     try:
-        # Run appropriate scraper
-        if config.get("scraper", "") == "selenium":
-            start_time, place_times = run_selenium_scraper(config, output_file)
-        else:
-            start_time, place_times = run_places_api_scraper(config, output_file)
+        # Define scraper functions
+        scraper_functions = {
+            "selenium": run_selenium_scraper,
+            "api": run_places_api_scraper,
+            "hybrid": run_hybrid_scraper,
+        }
+
+        # Get scraper type from config
+        scraper_type = config.get("scraper", "")
+        if scraper_type not in scraper_functions:
+            raise ValueError(
+                "Invalid scraper type. Must be 'selenium', 'api', or 'hybrid'"
+            )
+
+        # Run the selected scraper
+        start_time, place_times = scraper_functions[scraper_type](config, output_file)
 
         # Write closing bracket
         output_file.write("\n]")
@@ -42,7 +52,7 @@ def main():
         total_time = time.time() - start_time
         print(f"\nScraping completed in {total_time:.2f} seconds")
         print(
-            f"Average time per category: {sum(place_times) / len(place_times):.2f} seconds"
+            f"Average time per place: {sum(place_times) / len(place_times):.2f} seconds"
         )
 
     except Exception as e:

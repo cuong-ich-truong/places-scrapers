@@ -1,30 +1,34 @@
 # Places Scraper
 
-**Places Scraper** is a Python-based tool designed to scrape location details and user reviews from Google Maps using **Selenium** and **BeautifulSoup**. This script allows you to gather data on nearby places, including their names, ratings, addresses, phone numbers, and reviews.
+A Python tool for scraping place information and reviews from Google Maps using different methods.
 
 ## Features
 
-- Search for places by location and category
-- Scrape place details (name, address, phone, rating)
-- Collect reviews with ratings and dates
-- Export results to JSON files
+- Multiple scraping methods:
+  - Selenium: Full browser automation for places and reviews
+  - Places API: Fast and reliable place information retrieval
+  - Hybrid: Combines Places API for places and Selenium for reviews
 - Configurable search parameters
 
 ## Requirements
 
-- Python 3.x
-- Selenium
-- BeautifulSoup4
-- Chrome WebDriver
+Please refer to the requirements.txt file for the list of dependencies.
 
 ## Installation
 
-1. Clone this repository
-2. Install required packages:
+1. Clone the repository:
 ```bash
-pip install selenium beautifulsoup4
+git clone https://github.com/yourusername/places-scraper.git
+cd places-scraper
 ```
-3. Install Chrome WebDriver that matches your Chrome browser version
+
+2. Install dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+3. Set up environment variables:
+Create a `.env` file in the project root with the variables listed in the .env.example file.
 
 ## Configuration
 
@@ -32,100 +36,101 @@ Create a `config.json` file with the following structure:
 
 ```json
 {
-  "textQuery": "Đ. Nguyễn Thị Thập, District 7, Ho Chi Minh City, Vietnam",
-  "radiusKm": 2,
-  "categories": ["restaurant", "coffee"],
-  "maxPlaces": 5,
-  "maxReviews": 100,
-  "scraper": "selenium",
-  "output_dir": "output"
+    "scraper": "hybrid",  // Options: "selenium", "api", or "hybrid"
+    "categories": [
+        "restaurants",
+        "cafes",
+        "hotels"
+    ],
+    "textQuery": "in District 7, Ho Chi Minh City",
+    "maxPlaces": 20,
+    "radiusKm": 2,
+    "location": "10.738727, 106.711703",
+    "maxReviews": 100,
+    "output_dir": "output"
 }
 ```
 
-### Configuration Fields
+### Configuration Parameters
 
-| Field | Type | Description | Example |
-|-------|------|-------------|---------|
-| textQuery | string | Location to search for places | "Đ. Nguyễn Thị Thập, District 7, Ho Chi Minh City, Vietnam" |
-| radiusKm | number | Search radius in kilometers | 2 |
-| categories | array | List of place categories to search for | ["restaurant", "coffee"] |
-| maxPlaces | number | Maximum number of places to scrape per category | 5 |
-| maxReviews | number | Maximum number of reviews to collect per place | 100 |
-| scraper | string | Scraper to use ("selenium" or "api") | "selenium" |
-| output_dir | string | Directory to save output files | "output" |
+- `scraper`: Choose the scraping method
+  - `selenium`: Uses browser automation for both places and reviews
+  - `api`: Uses Google Places API for places (no reviews)
+  - `hybrid`: Uses Places API for places and Selenium for reviews (recommended)
+- `categories`: List of categories to search for
+- `textQuery`: Additional search terms
+- `maxPlaces`: Maximum number of places to fetch per category
+- `radiusKm`: Search radius in kilometers
+- `location`: Center point for the search (latitude, longitude)
+- `maxReviews`: Maximum number of reviews to fetch per place
+- `output_dir`: Directory to save output files
 
 ## Usage
 
-1. Update the `config.json` file with your desired search parameters
-2. Create a `.env` file with the required environment variables (see `.env.example`)
-3. Run the script:
+Run the scraper:
 ```bash
-# Using Selenium scraper (default)
-python3 -m places_scraper
-
-# Using Places API scraper 
-python3 -m places_scraper
+python -m places_scraper
 ```
 
-The script will automatically use the scraper specified in your `config.json` file (`scraper` field). No need to specify the method via command line arguments.
+The script will:
+1. Load configuration from `config.json`
+2. Create the output directory if it doesn't exist
+3. Run the selected scraper
+4. Save results to JSON files in the output directory
 
 ## Output
 
-The script will:
-1. Create the output directory specified in `config.json` (default: "output")
-2. Generate a JSON file with timestamp in the filename (e.g., `20240321_143022.json`)
-3. Save results in the following format:
-
-```json
-{
-  "name": "Place Name",
-  "address": "123 Street, City",
-  "phone": "+1234567890",
-  "website": "https://example.com",
-  "rating": 4.5,
-  "total_reviews": 100,
-  "url": "https://maps.google.com/...",
-  "category": "restaurant",
-  "reviews": [
-    {
-      "author": "John Doe",
-      "text": "Great place!",
-      "rating": 5,
-      "time": "2 weeks ago"
-    }
-  ]
-}
+Results are saved in the output directory with timestamps:
+```
+output/
+  places_20240315_123456.json
 ```
 
-## Notes
+Each place entry includes:
+- Basic information (name, address, phone, website)
+- Rating and total reviews
+- Individual reviews with text and ratings
 
-- The script uses Selenium to interact with Google Maps
-- Results are saved incrementally to prevent data loss
-- Progress and statistics are printed to the console
-- The script handles errors gracefully and continues processing
+## Scraper Comparison
 
-## Limitations
+| Feature           | Selenium | Places API | Hybrid |
+|------------------|----------|------------|--------|
+| Place Info       | ✓        | ✓          | ✓      |
+| Reviews          | ✓        | ✗          | ✓      |
+| Speed            | Slow     | Fast       | Medium |
+| Reliability      | Medium   | High       | High   |
+| API Quota Usage  | None     | High       | Low    |
 
-### Selenium Approach
+## Troubleshooting
 
-- **Performance**: The script takes approximately 3 seconds to scrape each place due to necessary delays for page loading and content rendering.
-- **Review Collection**: A maximum of 10 reviews are collected per place to maintain reasonable execution time and prevent excessive data collection.
-- **Rate Limiting**: The script includes built-in delays to avoid being blocked by Google Maps' rate limiting mechanisms.
+1. **Selenium Issues**:
+   - Ensure Chrome is installed
+   - Check Chrome version matches webdriver
+   - Try increasing wait times in config
 
-### Places API Approach
+2. **API Issues**:
+   - Verify API key is valid
+   - Check API quota limits
+   - Ensure location parameters are correct
+   - Limit number of reviews to 5 per place
 
-- **Cost**: The Places APIs are free up to 10,000 requests per month. Exceeding this limit will incur charges.
-- **Setup Overhead**: The Places API requires setting Google Project with Google Maps API service enabled and valid billing account.
-
-## References
-
-This project was inspired by and based on the work of [Ankush Rathour's GoogleMapsScraper](https://github.com/AnkushRathour/GoogleMapsScraper/tree/main). I have enhanced the original implementation with additional features and improvements.
+3. **General Issues**:
+   - Check internet connection
+   - Verify configuration file format
+   - Look for error messages in console
 
 ## Contributing
 
-We welcome contributions to Places Scraper! Feel free to fork the repository, create a branch, and submit a Pull Request with your improvements or new features.
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
 
 ## License
-This project is licensed under the MIT License. See the LICENSE file for more information.
 
-  
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Credits
+
+- This project was inspired by and based on the work of [Ankush Rathour's GoogleMapsScraper](https://github.com/AnkushRathour/GoogleMapsScraper/tree/main). I have enhanced the original implementation with additional features and improvements.
