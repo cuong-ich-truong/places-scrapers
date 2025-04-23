@@ -95,7 +95,9 @@ class HybridScraper:
         reviews = []
 
         self.driver.get(place_info.url)
-        time.sleep(1)  # Wait for page to load
+        self.wait.until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, "button[aria-label*='Reviews for']"))
+        )
 
         # Click on the "Reviews" tab
         try:
