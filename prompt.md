@@ -1,5 +1,27 @@
 # Design Specs
 
+## Google Places API
+
+Sample API Call:
+
+Text search:
+```console
+curl -X POST -d '{
+  "textQuery" : "Spicy Vegetarian Food in Sydney, Australia"
+}' \
+-H 'Content-Type: application/json' -H 'X-Goog-Api-Key: API_KEY' \
+-H 'X-Goog-FieldMask: places.displayName,places.formattedAddress,places.priceLevel' \
+'https://places.googleapis.com/v1/places:searchText'
+```
+
+Place details:
+```console
+curl -X GET -H 'Content-Type: application/json' \
+-H "X-Goog-Api-Key: API_KEY" \
+-H "X-Goog-FieldMask: id,displayName" \
+https://places.googleapis.com/v1/places/ChIJj61dQgK6j4AR4GeTYWZsKWw
+```
+
 ## Input Configuration
 
 Custom search area

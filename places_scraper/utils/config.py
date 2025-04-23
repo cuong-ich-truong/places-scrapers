@@ -22,7 +22,7 @@ def validate_config(config: Dict[str, Any]) -> None:
     Raises:
         ValueError: If configuration is invalid
     """
-    required_fields = ['search_term', 'radius_km', 'categories', 'max_places']
+    required_fields = ['textQuery', 'radiusKm', 'categories', 'maxPlaces']
     for field in required_fields:
         if field not in config:
             raise ValueError(f"Missing required configuration field: {field}")
@@ -30,8 +30,8 @@ def validate_config(config: Dict[str, Any]) -> None:
     if not isinstance(config['categories'], list):
         raise ValueError("Categories must be a list")
         
-    if not isinstance(config['max_places'], int) or config['max_places'] <= 0:
-        raise ValueError("max_places must be a positive integer")
+    if not isinstance(config['maxPlaces'], int) or config['maxPlaces'] <= 0:
+        raise ValueError("maxPlaces must be a positive integer")
         
-    if not isinstance(config['radius_km'], (int, float)) or config['radius_km'] <= 0:
-        raise ValueError("radius_km must be a positive number") 
+    if not isinstance(config['radiusKm'], (int, float)) or config['radiusKm'] <= 0:
+        raise ValueError("radiusKm must be a positive number") 

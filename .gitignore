@@ -77,4 +77,12 @@ coverage.xml
 dmypy.json
 
 # Pyre type checker
-.pyre/ 
+.pyre/
+
+# Environment variables
+.env
+.env.*
+!.env.example 
+
+# Cursor
+.cursor/rules
