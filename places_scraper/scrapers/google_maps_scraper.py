@@ -109,7 +109,7 @@ class GoogleMapsScraper:
         # Extract just the number from the rating (e.g., "5 stars" -> "5")
         rating = rating.split()[0] if rating else ""
 
-        review = Review(author=author, time=date, text=text, rating=rating)        
+        review = Review(author=author, time=date, text=text, rating=rating)
         return review
 
     def get_places(self, config: Dict[str, Any], category_name: str) -> List[Place]:

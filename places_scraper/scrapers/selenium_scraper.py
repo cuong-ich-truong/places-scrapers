@@ -32,7 +32,7 @@ def run_selenium_scraper(
                 place_start = time.time()
                 try:
                     # Get reviews for the place
-                    reviews = scraper.get_reviews(place)
+                    reviews = scraper.get_reviews(place, config["maxReviews"])
                     place.reviews = reviews
 
                     # Write to file
