@@ -2,6 +2,7 @@
 
 import os
 import time
+import asyncio
 from datetime import datetime
 
 from .utils.config import load_config, validate_config
@@ -10,7 +11,7 @@ from .scrapers.places_api_scraper import run_places_api_scraper
 from .scrapers.hybrid_scraper import run_hybrid_scraper
 
 
-def main():
+async def main():
     """Main entry point."""
     # Load and validate config
     config = load_config()
@@ -43,7 +44,9 @@ def main():
             )
 
         # Run the selected scraper
-        start_time, place_times = scraper_functions[scraper_type](config, output_file)
+        start_time, place_times = await scraper_functions[scraper_type](
+            config, output_file
+        )
 
         # Write closing bracket
         output_file.write("\n]")
@@ -52,7 +55,7 @@ def main():
         total_time = time.time() - start_time
         print(f"\nScraping completed in {total_time:.2f} seconds")
         print(
-            f"Average time per place: {sum(place_times) / len(place_times):.2f} seconds"
+            f"Average time per category: {sum(place_times) / len(place_times):.2f} seconds"
         )
 
     except Exception as e:
@@ -62,4 +65,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
