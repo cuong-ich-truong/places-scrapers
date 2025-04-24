@@ -47,7 +47,6 @@ venv.bak/
 *.pdf
 *.doc
 *.docx
-*.txt
 *.zip
 *.tar.gz
 *.tar
