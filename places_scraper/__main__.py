@@ -40,7 +40,7 @@ async def main():
         scraper_type = config.get("scraper", "")
         if scraper_type not in scraper_functions:
             raise ValueError(
-                "Invalid scraper type. Must be 'selenium', 'api', or 'hybrid'"
+                f"Invalid scraper type. Must be {', '.join(scraper_functions.keys())}"
             )
 
         # Run the selected scraper

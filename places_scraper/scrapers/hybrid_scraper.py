@@ -40,7 +40,9 @@ class HybridScraper:
         """Cleanup when the object is destroyed."""
         self.close()
 
-    def get_places(self, config: Dict[str, Any], category_name: str) -> List[Place]:
+    async def get_places(
+        self, config: Dict[str, Any], category_name: str
+    ) -> List[Place]:
         """Get places using Places API.
 
         Args:
@@ -62,7 +64,7 @@ class HybridScraper:
         }
 
         # Search for places
-        response = self.api.search_places(query)
+        response = await self.api.search_places(query)
         places = response.get("places", [])
 
         # Convert API response to Place objects
@@ -96,7 +98,9 @@ class HybridScraper:
 
         self.driver.get(place_info.url)
         self.wait.until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, "button[aria-label*='Reviews for']"))
+            EC.element_to_be_clickable(
+                (By.CSS_SELECTOR, "button[aria-label*='Reviews for']")
+            )
         )
 
         # Click on the "Reviews" tab
@@ -165,7 +169,10 @@ class HybridScraper:
                         )
                         reviews.append(review)
                         processed_reviews.add(review_key)
-                    except (NoSuchElementException, StaleElementReferenceException) as e:
+                    except (
+                        NoSuchElementException,
+                        StaleElementReferenceException,
+                    ) as e:
                         continue
 
                 # Scroll down
@@ -190,7 +197,7 @@ class HybridScraper:
         return reviews
 
 
-def run_hybrid_scraper(
+async def run_hybrid_scraper(
     config: Dict[str, Any], output_file
 ) -> Tuple[float, List[float]]:
     """Run the hybrid scraper.
@@ -206,7 +213,7 @@ def run_hybrid_scraper(
     try:
         results = {}
         for category in config["categories"]:
-            places = scraper.get_places(config, category)
+            places = await scraper.get_places(config, category)
             for place in places:
                 place_start = time.time()
                 print(f"Getting reviews for {place.name} ({place.url})")
